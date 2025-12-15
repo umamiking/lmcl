@@ -31,15 +31,6 @@ An interactive web tool for analyzing component compatibility across Leatherman 
 
 The tool uses real-world tolerances based on actual swap testing and validates multiple compatibility factors:
 
-#### Thickness Compatibility:
-- ✅ **Perfect Fit (Green)** - Within 0.05mm, direct swap with no modifications
-- ⚡ **Close Fit (Purple)** - Within 0.3mm in either direction, works with handle compression or expansion (pivot screw tightening/loosening compensates)
-- 🔧 **Needs Spacer (Orange)** - Replacement is thinner by 0.3-2mm, includes specific spacer recommendations
-- ❌ **Too Thick (Red)** - Replacement is thicker by more than 0.3mm, beyond handle expansion capability
-- ❌ **Won't Work (Red)** - Replacement is thinner by more than 2mm, gap too large even with spacers
-
-**Important:** Spacers can only be used when the replacement tool is **thinner** than the original. If the replacement is thicker by more than 0.3mm, the handle cannot expand enough to accommodate it.
-
 #### Pivot Compatibility:
 **Critical Requirement:** Tool pivots must match within 0.05mm for components to be swappable. The tool automatically checks pivot sizes and blocks incompatible swaps.
 
@@ -52,6 +43,35 @@ When a pivot mismatch is detected, the tool displays:
 - ✗ **Pivot Mismatch** badge
 - Detailed warning showing source and target pivot sizes
 - These swaps are marked as incompatible regardless of thickness
+
+#### Locking Geometry Compatibility:
+**New Critical Factor:** Beyond pivot size and thickness, components must have compatible locking mechanisms.
+
+**Internal Tool Locking Groups (Perfect Match):**
+- **Free/Arc Family**: Arc ↔ Free P2 ↔ Free P4
+- **Wave/Rebar Family**: Rebar ↔ Bond ↔ Wave+ ↔ Signal
+- **Sidekick/Wingman Family**: Sidekick ↔ Wingman
+- **Close Fit Combinations**: Rebar/Bond/Wave+ ↔ Super Tool 300, Rebar/Bond/Wave+ ↔ Sidekick/Wingman
+
+**External Tool Locking Groups (Perfect Match):**
+- **Wave+ Blade Family**: Wave+, Curl, Charge+, Wave Alpha, Signal blades
+- **Wave+ File/Saw Family**: Wave+, Curl, Charge+, Wave Alpha, Signal files/saws
+- **Surge Family**: Surge external tools ONLY compatible with other Surge tools
+- **Sidekick/Wingman Family**: Sidekick, Wingman, Rev, Bolster external tools
+
+When locking geometry is incompatible:
+- ✗ **Lock Incompatible** or **External Lock Incompatible** badge
+- Detailed warning explaining the incompatibility
+- When locking is "close fit": Badge shows **(Close Lock)** - may require minor adjustment
+
+#### Thickness Compatibility:
+- ✅ **Perfect Fit (Green)** - Within 0.05mm, direct swap with no modifications
+- ⚡ **Close Fit (Purple)** - Within 0.3mm in either direction, works with handle compression or expansion (pivot screw tightening/loosening compensates)
+- 🔧 **Needs Spacer (Orange)** - Replacement is thinner by 0.3-2mm, includes specific spacer recommendations
+- ❌ **Too Thick (Red)** - Replacement is thicker by more than 0.3mm, beyond handle expansion capability
+- ❌ **Won't Work (Red)** - Replacement is thinner by more than 2mm, gap too large even with spacers
+
+**Important:** Spacers can only be used when the replacement tool is **thinner** than the original. If the replacement is thicker by more than 0.3mm, the handle cannot expand enough to accommodate it.
 
 ### Intelligent Spacer Recommendations
 
@@ -91,13 +111,18 @@ Models marked with ✓ include detailed stack order information showing:
 
 ## 📊 Data Source
 
-All measurements are sourced from [Zach at MultiParts Store](https://multipartsstore.com) and [ZapWizard](https://zapwizard.com/), who have meticulously documented tool dimensions through precise measurements and real-world testing.
+All measurements are sourced from [Zach at MultiParts Store](https://multipartsstore.com) and [ZapWizard](https://zapwizard.com/), who have meticulously documented tool dimensions through precise measurements and real-world testing. Locking geometry compatibility data is based on real-world swap testing.
 
 **Example Verified Swaps:**
 
 ✅ **Rebar Awl (2.32mm) ↔ Wave+ Scissors (2.53mm)**  
 *Difference: +0.21mm (slightly thicker) - Works perfectly! Handle expands slightly, no spacers needed.*  
-*Both tools use 4.69mm pivots ✓*
+*Both tools use 4.69mm pivots ✓*  
+*Rebar and Wave+ have perfect internal locking compatibility ✓*
+
+✅ **Wave+ Plain Blade → Charge+ Serrated Blade**  
+*External tools with perfect locking geometry match ✓*  
+*Both use same external blade slot design*
 
 ✅ **Any tool → Thinner replacement with spacers**  
 *When replacing with a thinner tool (0.3-2mm difference), add appropriate spacers to fill the gap.*
@@ -107,6 +132,12 @@ All measurements are sourced from [Zach at MultiParts Store](https://multipartss
 
 ❌ **Rebar Awl (2.32mm) → Wingman Phillips (3.06mm)**  
 *Difference: +0.74mm - Too thick! Beyond the 0.3mm expansion tolerance. Cannot add spacers on top of a thicker tool.*
+
+❌ **Wave+ Plain Blade → Surge Plain Blade**  
+*Even with same pivot and thickness, external locking geometry is incompatible. Surge external tools only work with other Surge tools.*
+
+❌ **Arc Scissors → Rebar File**  
+*Different locking geometry families - Arc/Free tools incompatible with Wave/Rebar internal locking.*
 
 ## 🚀 How to Use
 
@@ -163,19 +194,26 @@ All measurements are sourced from [Zach at MultiParts Store](https://multipartss
 
 ### Compatibility Validation
 
-The tool performs multi-factor compatibility checking:
+The tool performs multi-factor compatibility checking in this order:
 
 1. **Pivot Size Match** (Primary Check)
    - Tool pivots must match within 0.05mm
    - This is checked FIRST as it's a hard physical requirement
    - No amount of spacers can compensate for pivot mismatch
 
-2. **Thickness Compatibility** (Secondary Check)
-   - Only evaluated after pivot compatibility is confirmed
+2. **Locking Geometry Match** (Secondary Check)
+   - Internal tools: Model-level compatibility check (e.g., Wave+ ↔ Rebar)
+   - External tools: Component-level compatibility check (e.g., Wave+ Plain Blade ↔ Charge+ Plain Blade)
+   - Must have "Perfect" (X) or "Close fit" (/) compatibility
+   - Based on real-world testing of locking mechanisms
+   - Even with matching pivots, incompatible locking prevents the swap
+
+3. **Thickness Compatibility** (Tertiary Check)
+   - Only evaluated after pivot and locking compatibility is confirmed
    - Uses bidirectional tolerance within 0.3mm (compression or expansion)
    - Beyond 0.3mm: thicker = incompatible, thinner = needs spacers
 
-3. **Spacer Calculation** (When Replacement is Thinner)
+4. **Spacer Calculation** (When Replacement is Thinner)
    - Automatically determines which spacer pack applies (5mm vs 3.5mm)
    - Calculates optimal spacer combinations
    - Only suggests spacers when replacement is 0.3-2mm thinner than original
@@ -188,9 +226,15 @@ The tool uses a hierarchical validation system based on real-world testing:
 **Primary Requirement: Pivot Compatibility**
 - Tool pivots must match within 0.05mm (essentially exact match)
 - This is a hard physical constraint - components cannot mount on wrong-sized pivots
-- Checked before any thickness analysis
+- Checked before any other compatibility analysis
 
-**Secondary Requirement: Thickness Tolerance**
+**Secondary Requirement: Locking Geometry Compatibility**
+- Internal tools must have compatible locking mechanisms (model-level check)
+- External tools must have compatible slot locking (component-level check)
+- Perfect match (X) or Close fit (/) required for successful swaps
+- Even with matching pivots and thickness, incompatible locking geometry prevents the swap
+
+**Tertiary Requirement: Thickness Tolerance**
 - **0-0.05mm**: Perfect dimensional match
 - **0.05-0.3mm**: Handle flex zone (works in BOTH directions - compression when thinner, expansion when slightly thicker)
 - **0.3-2mm thinner**: Spacer compensation zone (available spacers can fill the gap when replacement is thinner)
@@ -209,6 +253,7 @@ The tool uses a hierarchical validation system based on real-world testing:
 - Bond stores all tools inside handles similar to Rebar
 - Some tools are "large tools" (files, saws, blades) that typically only swap with other large tools
 - Plier heads are excluded from swap recommendations as they are complex assemblies
+- **Locking geometry is critical**: Surge external tools only work with other Surge external tools due to unique locking design
 - Estimated/unknown measurements are marked with ⚠️ warning indicators
 
 ## 🎨 Technology

@@ -1151,6 +1151,114 @@
                 notes: 'All tools stored inside handles. Wood saw, serrated blade, plain edge knife, and file are large/thick tools but part of internal stack (unlike Wave+/Surge external tools). Lanyard ring position estimated between awl and file.'
             }
         };
+        
+        // Locking Geometry Compatibility Matrix
+        // X = Perfect compatibility, / = Close fit (may not be 100% exact)
+        // This applies to INTERNAL implements only (not external tools)
+        // Data source: Real-world testing of internal implement locking mechanisms
+        const lockingGeometry = {
+            // Free/Arc family - all perfectly compatible with each other
+            'Arc': { perfect: ['Arc', 'Free P2', 'Free P4'], close: [] },
+            'Free P2': { perfect: ['Arc', 'Free P2', 'Free P4'], close: [] },
+            'Free P4': { perfect: ['Arc', 'Free P2', 'Free P4'], close: [] },
+            
+            // Wave/Rebar family - extensive compatibility
+            'Rebar': { 
+                perfect: ['Rebar', 'Bond', 'Wave+', 'Signal'],
+                close: ['Super Tool 300', 'Sidekick', 'Wingman']
+            },
+            'Bond': { 
+                perfect: ['Rebar', 'Bond', 'Wave+', 'Signal'],
+                close: ['Super Tool 300', 'Sidekick', 'Wingman']
+            },
+            'Super Tool 300': { 
+                perfect: ['Super Tool 300', 'Surge'],
+                close: ['Rebar', 'Bond', 'Wave+', 'Sidekick', 'Wingman']
+            },
+            'Wave+': { 
+                perfect: ['Rebar', 'Bond', 'Wave+', 'Surge', 'Signal'],
+                close: ['Super Tool 300', 'Sidekick', 'Wingman']
+            },
+            'Surge': { 
+                perfect: ['Super Tool 300', 'Surge'],
+                close: []
+            },
+            
+            // Sidekick/Wingman family
+            'Sidekick': { 
+                perfect: ['Sidekick', 'Wingman'],
+                close: ['Rebar', 'Bond', 'Super Tool 300', 'Wave+']
+            },
+            'Wingman': { 
+                perfect: ['Sidekick', 'Wingman'],
+                close: ['Rebar', 'Bond', 'Super Tool 300', 'Wave+']
+            },
+            
+            // Signal
+            'Signal': {
+                perfect: ['Rebar', 'Bond', 'Wave+', 'Signal'],
+                close: ['Sidekick', 'Wingman']
+            }
+        };
+        
+        // External Tool Locking Geometry Compatibility
+        // For external/outer tools that mount in handle slots (blades, saws, scissors, files)
+        // X = Perfect compatibility
+        const externalLockingGeometry = {
+            // Wave+ Blade family - blades compatible with each other
+            'Wave+ Plain Edge Knife Blade': {
+                perfect: ['Wave+ Plain Edge Knife Blade', 'Wave+ Serrated Edge Knife Blade', 'Curl Plain Blade', 
+                         'Charge+ Plain Blade', 'Charge+ Serrated Blade', 'Wave Alpha Plain Blade', 
+                         'Wave Alpha Saw', 'Signal Combo Blade']
+            },
+            'Wave+ Serrated Edge Knife Blade': {
+                perfect: ['Wave+ Plain Edge Knife Blade', 'Wave+ Serrated Edge Knife Blade', 'Curl Plain Blade',
+                         'Charge+ Plain Blade', 'Charge+ Serrated Blade', 'Wave Alpha Plain Blade',
+                         'Wave Alpha Saw', 'Signal Combo Blade']
+            },
+            
+            // Wave+ File/Saw family
+            'Wave+ Metal/Diamond File': {
+                perfect: ['Wave+ Metal/Diamond File', 'Wave+ Wood Saw', 'Curl File', 'Charge+ File', 'Charge+ Saw',
+                         'Wave Alpha Scissors', 'Wave Alpha File', 'Signal Saw']
+            },
+            'Wave+ Wood Saw': {
+                perfect: ['Wave+ Metal/Diamond File', 'Wave+ Wood Saw', 'Curl File', 'Charge+ File', 'Charge+ Saw',
+                         'Wave Alpha Scissors', 'Wave Alpha File', 'Signal Saw']
+            },
+            
+            // Surge external tools - only compatible with other Surge tools
+            'Surge Plain Edge Knife Blade': {
+                perfect: ['Surge Plain Edge Knife Blade', 'Surge Serrated Edge Knife Blade']
+            },
+            'Surge Serrated Edge Knife Blade': {
+                perfect: ['Surge Plain Edge Knife Blade', 'Surge Serrated Edge Knife Blade']
+            },
+            'Surge T-Shank Exchanger': {
+                perfect: ['Surge T-Shank Exchanger', 'Surge Scissors']
+            },
+            'Surge Scissors': {
+                perfect: ['Surge T-Shank Exchanger', 'Surge Scissors']
+            },
+            
+            // Sidekick/Wingman family
+            'Sidekick Plain Edge Knife': {
+                perfect: ['Sidekick Plain Edge Knife', 'Sidekick Saw', 'Wingman Combo Blade', 'Wingman Scissors',
+                         'Rev Plain Blade', 'Bolster Plain Blade']
+            },
+            'Sidekick Wood Saw': {
+                perfect: ['Sidekick Plain Edge Knife', 'Sidekick Saw', 'Wingman Combo Blade', 'Wingman Scissors',
+                         'Rev Plain Blade', 'Bolster Plain Blade']
+            },
+            'Wingman 420HC Combo Knife': {
+                perfect: ['Sidekick Plain Edge Knife', 'Sidekick Saw', 'Wingman Combo Blade', 'Wingman Scissors',
+                         'Rev Plain Blade', 'Bolster Plain Blade']
+            },
+            'Wingman Scissors': {
+                perfect: ['Sidekick Plain Edge Knife', 'Sidekick Saw', 'Wingman Combo Blade', 'Wingman Scissors',
+                         'Rev Plain Blade', 'Bolster Plain Blade']
+            }
+        };
 
         // Initialize
         function init() {
@@ -1273,7 +1381,9 @@
                     selectedTool.size, 
                     parseFloat(tool.Size),
                     selectedTool.model,
-                    tool.Tool
+                    tool.Tool,
+                    selectedTool.component,
+                    tool.Component
                 );
                 
                 return {
@@ -1328,7 +1438,9 @@
                         parseFloat(toolA.Size),
                         parseFloat(toolB.Size),
                         modelA,
-                        modelB
+                        modelB,
+                        toolA.Component,
+                        toolB.Component
                     );
                     
                     if (analysis.category !== 'incompatible') {
@@ -1365,6 +1477,12 @@
                        </div>`
                     : '';
                 
+                const lockingHTML = pair.lockingIssue
+                    ? `<div class="spacer-recommendation" style="border-left-color: #f39c12; background: rgba(243, 156, 18, 0.1);">
+                        <strong>ℹ️ Locking Fit:</strong> ${pair.lockingIssue}
+                       </div>`
+                    : '';
+                
                 return `
                     <div class="swap-card ${pair.category}" 
                          style="animation: fadeIn 0.5s ease-out ${idx * 0.05}s both">
@@ -1381,6 +1499,7 @@
                             ${modelB}: ${pair.sizeB}mm<br>
                             Difference: ${pair.diff > 0 ? '+' : ''}${pair.diff.toFixed(2)}mm
                         </div>
+                        ${lockingHTML}
                         ${spacerHTML}
                     </div>
                 `;
@@ -1388,7 +1507,7 @@
         }
 
         // Analyze compatibility between two sizes
-        function analyzeCompatibility(originalSize, newSize, sourceModel, targetModel) {
+        function analyzeCompatibility(originalSize, newSize, sourceModel, targetModel, sourceComponent, targetComponent) {
             const diff = newSize - originalSize;
             const absDiff = Math.abs(diff);
             
@@ -1408,8 +1527,58 @@
                     badgeText: '✗ Pivot Mismatch',
                     spacerRecommendation: null,
                     spacerPack: null,
-                    pivotIssue: `Source pivot: ${sourcePivot.Size}mm vs Target pivot: ${targetPivot.Size}mm`
+                    pivotIssue: `Source pivot: ${sourcePivot.Size}mm vs Target pivot: ${targetPivot.Size}mm`,
+                    lockingIssue: null
                 };
+            }
+            
+            // Check if these are external tools by checking if they exist in externalLockingGeometry
+            const isExternalToolSwap = externalLockingGeometry[sourceComponent] && externalLockingGeometry[targetComponent];
+            
+            let lockingCompatibility = 'perfect'; // Default for tools without locking data
+            let lockingIssue = null;
+            
+            if (isExternalToolSwap) {
+                // Check external tool locking geometry
+                const sourceExternalLocking = externalLockingGeometry[sourceComponent];
+                
+                if (sourceExternalLocking && sourceExternalLocking.perfect.includes(targetComponent)) {
+                    lockingCompatibility = 'perfect';
+                } else {
+                    // External tools not compatible
+                    return {
+                        diff,
+                        absDiff,
+                        category: 'incompatible',
+                        badgeText: '✗ External Lock Incompatible',
+                        spacerRecommendation: null,
+                        spacerPack: null,
+                        pivotIssue: null,
+                        lockingIssue: `External tool locking geometry incompatible: ${sourceComponent} ✗ ${targetComponent}`
+                    };
+                }
+            } else if (lockingGeometry[sourceModel] && lockingGeometry[targetModel]) {
+                // Check INTERNAL tool locking geometry compatibility
+                const sourceLocking = lockingGeometry[sourceModel];
+                
+                if (sourceLocking.perfect.includes(targetModel)) {
+                    lockingCompatibility = 'perfect';
+                } else if (sourceLocking.close.includes(targetModel)) {
+                    lockingCompatibility = 'close';
+                    lockingIssue = 'Locking geometry is close fit - may require minor adjustment';
+                } else {
+                    // Not in either list - incompatible locking geometry
+                    return {
+                        diff,
+                        absDiff,
+                        category: 'incompatible',
+                        badgeText: '✗ Lock Incompatible',
+                        spacerRecommendation: null,
+                        spacerPack: null,
+                        pivotIssue: null,
+                        lockingIssue: `Locking geometry incompatible between ${sourceModel} and ${targetModel} internal tools`
+                    };
+                }
             }
             
             // Determine spacer pack
@@ -1458,6 +1627,11 @@
                 badgeText = '✗ Won\'t Work';
             }
             
+            // Adjust badge if locking is close fit
+            if (lockingCompatibility === 'close' && category !== 'incompatible') {
+                badgeText += ' (Close Lock)';
+            }
+            
             return {
                 diff,
                 absDiff,
@@ -1465,7 +1639,8 @@
                 badgeText,
                 spacerRecommendation,
                 spacerPack,
-                pivotIssue: null
+                pivotIssue: null,
+                lockingIssue: lockingIssue
             };
         }
 
@@ -1488,6 +1663,12 @@
                        </div>`
                     : '';
                 
+                const lockingHTML = result.lockingIssue
+                    ? `<div class="spacer-recommendation" style="border-left-color: #f39c12; background: rgba(243, 156, 18, 0.1);">
+                        <strong>ℹ️ Locking Fit:</strong> ${result.lockingIssue}
+                       </div>`
+                    : '';
+                
                 const diffSign = result.diff > 0 ? '+' : '';
                 const thicknessNote = result.diff > 0 ? 'thicker' : result.diff < 0 ? 'thinner' : 'same';
                 
@@ -1506,6 +1687,7 @@
                             ${result.category === 'close-fit' ? '<em>Works with handle compression</em>' : ''}
                         </div>
                         ${pivotHTML}
+                        ${lockingHTML}
                         ${spacerHTML}
                         <div class="measurement-bar">
                             <div class="measurement-fill" style="width: ${percentage}%">
